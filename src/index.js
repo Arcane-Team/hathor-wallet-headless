@@ -16,6 +16,7 @@ import apiKeyAuth from './api-key-auth';
 import logger from './logger';
 import version from './version';
 import { lock, lockTypes } from './lock';
+import { decode } from './utils/crypto';
 
 // Error message when the user tries to send a transaction while the lock is active
 const cantSendTxErrorMessage = 'You already have a transaction being sent. Please wait until it\'s done to send another.';
@@ -67,19 +68,10 @@ app.get('/docs', (req, res) => {
  */
 app.post('/start', (req, res) => {
   // We expect the user to send the seed he wants to use
-  if (!('seedKey' in req.body)) {
+  if (!('seed' in req.body)) {
     res.send({
       success: false,
-      message: 'Parameter \'seedKey\' is required.',
-    });
-    return;
-  }
-
-  const seedKey = req.body.seedKey;
-  if (!(seedKey in config.seeds)) {
-    res.send({
-      success: false,
-      message: 'Seed not found.',
+      message: 'Parameter \'seed\' is required.',
     });
     return;
   }
@@ -93,7 +85,7 @@ app.post('/start', (req, res) => {
     return;
   }
 
-  const seed = config.seeds[seedKey];
+  const seed = decode(req.body.seed);
   const connection = new Connection({network: config.network, servers: [config.server], connectionTimeout: config.connectionTimeout});
   const walletConfig = {
     seed,
